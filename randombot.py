@@ -1,5 +1,5 @@
 import random
-
+# Connect Four game in Python (console version)
 ROW_COUNT = 6
 COLUMN_COUNT = 7
 
