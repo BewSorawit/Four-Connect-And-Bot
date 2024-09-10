@@ -79,8 +79,9 @@ def main():
     game_over = False
     turn = 0  # 0 for player, 1 for bot
 
+    print_board(board)
     while not game_over:
-        print_board(board)
+        #print_board(board)
         
         # Player 1 Input
         if turn == 0:
