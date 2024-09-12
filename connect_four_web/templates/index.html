@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Four Black Mode</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Connect Four Black Mode</h1>
+    <div id="board"></div>
+    <button id="reset-btn">เริ่มใหม่</button>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        const ROWS = 6;
+        const COLS = 7;
+        const EMPTY = 0;
+        const PLAYER_PIECE = 1;
+        const AI_PIECE = 2;
+        
+        let board = Array(ROWS).fill().map(() => Array(COLS).fill(EMPTY));
+
+        function createBoard() {
+            let html = '<table>';
+            for (let r = ROWS - 1; r >= 0; r--) {
+                html += '<tr>';
+                for (let c = 0; c < COLS; c++) {
+                    html += `<td id="${r}-${c}" onclick="makeMove(${c})"></td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            $('#board').html(html);
+        }
+
+        function updateBoard() {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = $(`#${r}-${c}`);
+                    if (board[r][c] === PLAYER_PIECE) {
+                        cell.addClass('player-piece');
+                    } else if (board[r][c] === AI_PIECE) {
+                        cell.addClass('ai-piece');
+                    } else {
+                        cell.removeClass('player-piece ai-piece');
+                    }
+                }
+            }
+        }
+
+        function makeMove(col) {
+            $.ajax({
+                url: '/make_move',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ column: col, board: board }),
+                success: function(response) {
+                    board = response.board;
+                    updateBoard();
+                    if (response.winner) {
+                        setTimeout(() => {
+                            alert(`${response.winner} wins!`);
+                        }, 100);
+                    }
+                }
+            });
+        }
+
+        function resetGame() {
+            board = Array(ROWS).fill().map(() => Array(COLS).fill(EMPTY));
+            createBoard();
+            updateBoard();
+        }
+
+        $(document).ready(function() {
+            createBoard();
+            updateBoard();
+
+            $('#reset-btn').click(function() {
+                resetGame();
+            });
+        });
+    </script>
+</body>
+</html>
