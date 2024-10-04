@@ -10,6 +10,8 @@
     <h1>Connect Four Black Mode</h1>
     <div id="board"></div>
     <button id="reset-btn">เริ่มใหม่</button>
+    <h1><div id="score-display">AI Score: <span id="ai-score">0</span></div></h1>
+    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         const ROWS = 6;
@@ -57,6 +59,10 @@
                 success: function(response) {
                     board = response.board;
                     updateBoard();
+                    
+                    // อัปเดตคะแนน AI
+                    $('#ai-score').text(response.score);
+
                     if (response.winner) {
                         setTimeout(() => {
                             alert(`${response.winner} wins!`);
@@ -78,6 +84,7 @@
 
             $('#reset-btn').click(function() {
                 resetGame();
+                $('#ai-score').text(0);  // รีเซ็ตคะแนน AI เป็น 0
             });
         });
     </script>

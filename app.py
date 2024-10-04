@@ -96,9 +96,9 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):  #algorthim minimax an
     if depth == 0 or is_terminal:
         if is_terminal:
             if winning_move(board, AI_PIECE):
-                return (None, 100000000000000)
+                return (None, 1000)
             elif winning_move(board, PLAYER_PIECE):
-                return (None, -10000000000000)
+                return (None, -1000)
             else:
                 return (None, 0)
         else:
@@ -169,16 +169,18 @@ def make_move():
         row = get_next_open_row(board, col)
         drop_piece(board, row, col, PLAYER_PIECE)
         if winning_move(board, PLAYER_PIECE):
-            return jsonify({'board': board.tolist(), 'winner': 'Player'})
+            return jsonify({'board': board.tolist(), 'winner': 'Player', 'score': None})
         
-        ai_col, _ = minimax(board, 4, -math.inf, math.inf, True)
+        # AI ใช้ Minimax เพื่อเลือกตำแหน่งที่ดีที่สุด และเก็บคะแนน
+        ai_col, ai_score = minimax(board, 4, -math.inf, math.inf, True)
         if is_valid_location(board, ai_col):
             ai_row = get_next_open_row(board, ai_col)
             drop_piece(board, ai_row, ai_col, AI_PIECE)
             if winning_move(board, AI_PIECE):
-                return jsonify({'board': board.tolist(), 'winner': 'AI'})
+                return jsonify({'board': board.tolist(), 'winner': 'AI', 'score': ai_score})
         
-    return jsonify({'board': board.tolist(), 'winner': ''})
+    return jsonify({'board': board.tolist(), 'winner': '', 'score': ai_score})
+
 
 if __name__ == "__main__":
     app.run(debug=True)
