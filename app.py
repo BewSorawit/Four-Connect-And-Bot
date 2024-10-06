@@ -191,7 +191,7 @@ def make_move():
             if winning_move(board, AI_PIECE):
                 return jsonify({'board': board.tolist(), 'winner': 'AI', 'score': ai_score})
         print(board.tolist())
-    return jsonify({'board': board.tolist(), 'winner': ''})
+    return jsonify({'board': board.tolist(), 'winner': '', 'score': ai_score})
 
 
 if __name__ == "__main__":
