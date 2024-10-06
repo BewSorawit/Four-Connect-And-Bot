@@ -1,37 +1,42 @@
-from flask import Flask, render_template, request, jsonify  # Flask ใช้สำหรับสร้างเว็บเซิร์ฟเวอร์
-import numpy as np                                          # NumPy (np) ใช้สำหรับจัดการกระดานเกมในรูปแบบเมทริกซ์ 2 มิติ
-import math                            
+from flask import Flask, render_template, request, jsonify
+import numpy as np
+import math
 import random
 
-# math และ random ใช้สำหรับการคำนวณทางคณิตศาสตร์และการเลือกเดินหมากแบบสุ่มของ AI
 
-#python app.py
-#localhost http://127.0.0.1:5000/
+# python app.py
+# localhost http://127.0.0.1:5000/
 
 app = Flask(__name__)
 
-ROW_COUNT = 6             # ROW_COUNT และ COLUMN_COUNT กำหนดขนาดกระดาน (6 แถว และ 7 คอลัมน์)
-COLUMN_COUNT = 7          
-PLAYER_PIECE = 1          # PLAYER_PIECE และ AI_PIECE แทนสัญลักษณ์ของผู้เล่นและ AI
+ROW_COUNT = 6
+COLUMN_COUNT = 7
+PLAYER_PIECE = 1
 AI_PIECE = 2
 EMPTY = 0
-WINDOW_LENGTH = 4         # WINDOW_LENGTH (4) คือจำนวนช่องที่ต้องต่อกันเพื่อชนะ (คือ 4 ช่องติดกัน)
+WINDOW_LENGTH = 4
 
-def create_board():                                # สร้างกระดานขนาด 6x7 ที่มีค่าเป็นศูนย์ (แสดงถึงช่องว่าง)
-    return np.zeros((ROW_COUNT, COLUMN_COUNT))      
 
-def drop_piece(board, row, col, piece):            # อัปเดตกระดานโดยวางหมากของผู้เล่นในตำแหน่งที่กำหนด
-    board[row][col] = piece                         
+# อัปเดตกระดานโดยวางหมากของผู้เล่นในตำแหน่งที่กำหนด
+def drop_piece(board, row, col, piece):
+    board[row][col] = piece
 
-def is_valid_location(board, col):                 # ตรวจสอบว่าคอลัมน์นั้นสามารถวางหมากได้หรือไม่ (ถ้าคอลัมน์นั้นยังไม่เต็ม)
-    return board[ROW_COUNT-1][col] == 0             
 
-def get_next_open_row(board, col):                 # คืนค่าแถวที่ยังว่างในคอลัมน์นั้นเพื่อวางหมาก
+# ตรวจสอบว่าคอลัมน์นั้นสามารถวางหมากได้หรือไม่ (ถ้าคอลัมน์นั้นยังไม่เต็ม)
+# คืนค่า col ที่ว่าง
+def is_valid_location(board, col):
+    return board[ROW_COUNT-1][col] == 0
+
+
+# คืนค่าแถวที่ยังว่างในคอลัมน์นั้นเพื่อวางหมาก
+def get_next_open_row(board, col):
     for r in range(ROW_COUNT):
         if board[r][col] == 0:
             return r
 
-def winning_move(board, piece):              # ตรวจสอบว่าผู้เล่นชนะเกมหรือไม่โดยดูว่าหมาก 4 ตัวเรียงติดกันในแนวนอน แนวตั้ง หรือแนวทแยง
+
+# ตรวจสอบว่าผู้เล่นชนะเกมหรือไม่โดยดูว่าหมาก 4 ตัวเรียงติดกันในแนวนอน แนวตั้ง หรือแนวทแยง
+def winning_move(board, piece):
     for c in range(COLUMN_COUNT-3):
         for r in range(ROW_COUNT):
             if board[r][c] == piece and board[r][c+1] == piece and board[r][c+2] == piece and board[r][c+3] == piece:
@@ -48,6 +53,7 @@ def winning_move(board, piece):              # ตรวจสอบว่าผ
         for r in range(3, ROW_COUNT):
             if board[r][c] == piece and board[r-1][c+1] == piece and board[r-2][c+2] == piece and board[r-3][c+3] == piece:
                 return True
+
 
 def evaluate_window(window, piece):
     # ประเมินกลุ่ม 4 ช่อง ("หน้าต่าง") และให้คะแนนตามจำนวนหมากของผู้เล่นหรือฝ่ายตรงข้าม ถ้าผู้เล่นมีหมากมากกว่าจะได้คะแนนเพิ่ม ถ้าฝ่ายตรงข้ามมีหมากอยู่จะลดคะแนนลง
@@ -66,7 +72,8 @@ def evaluate_window(window, piece):
         score -= 4
     return score
 
-def score_position(board, piece):   
+
+def score_position(board, piece):
     # ให้คะแนนกระดานโดยประเมินแถว คอลัมน์ และแนวทแยงโดยใช้ฟังก์ชัน evaluate_window() และให้ความสำคัญกับคอลัมน์กลางมากขึ้น เพราะมีโอกาสสูงที่จะต่อหมากได้
     # ประเมินกระดานทั้งหมดเพื่อคำนวณคะแนนของผู้เล่นหรือ AI
     score = 0
@@ -74,12 +81,12 @@ def score_position(board, piece):
     center_count = center_array.count(piece)
     score += center_count * 3
     for r in range(ROW_COUNT):
-        row_array = [int(i) for i in list(board[r,:])]
+        row_array = [int(i) for i in list(board[r, :])]
         for c in range(COLUMN_COUNT-3):
             window = row_array[c:c+WINDOW_LENGTH]
             score += evaluate_window(window, piece)
     for c in range(COLUMN_COUNT):
-        col_array = [int(i) for i in list(board[:,c])]
+        col_array = [int(i) for i in list(board[:, c])]
         for r in range(ROW_COUNT-3):
             window = col_array[r:r+WINDOW_LENGTH]
             score += evaluate_window(window, piece)
@@ -93,14 +100,13 @@ def score_position(board, piece):
             score += evaluate_window(window, piece)
     return score
 
-def is_terminal_node(board):           # ตรวจสอบว่าเกมสิ้นสุดลงแล้วหรือไม่ (ผู้เล่นคนใดคนหนึ่งชนะ หรือไม่มีตำแหน่งที่สามารถเดินได้อีก)
+
+# ตรวจสอบว่าเกมสิ้นสุดลงแล้วหรือไม่ (ผู้เล่นคนใดคนหนึ่งชนะ หรือไม่มีตำแหน่งที่สามารถเดินได้อีก)
+def is_terminal_node(board):
     return winning_move(board, PLAYER_PIECE) or winning_move(board, AI_PIECE) or len(get_valid_locations(board)) == 0
 
-def minimax(board, depth, alpha, beta, maximizingPlayer):  
-    # ใช้อัลกอริทึม Minimax พร้อม Alpha-Beta Pruning เพื่อหาการเดินที่ดีที่สุด
-    # Minimax เป็นอัลกอริทึมที่ใช้ในการจำลองการเดินหมากและเลือกการเดินที่ดีที่สุด โดยพิจารณาจากการเดินหมากของคู่แข่งด้วย
-    # พารามิเตอร์ depth กำหนดความลึกของการคำนวณ ว่า AI จะคาดการณ์ล่วงหน้าได้กี่การเดิน
-    # Alpha-Beta pruning ช่วยลดจำนวนโหนด (การเดินหมาก) ที่ต้องพิจารณา เพื่อเพิ่มประสิทธิภาพของอัลกอริทึม
+
+def minimax(board, depth, alpha, beta, maximizingPlayer):
     valid_locations = get_valid_locations(board)
     is_terminal = is_terminal_node(board)
     if depth == 0 or is_terminal:
@@ -136,6 +142,7 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
             b_copy = board.copy()
             drop_piece(b_copy, row, col, PLAYER_PIECE)
             new_score = minimax(b_copy, depth-1, alpha, beta, True)[1]
+            # pruning
             if new_score < value:
                 value = new_score
                 column = col
@@ -144,6 +151,8 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
                 break
         return column, value
 
+
+# คืนค่า col ที่ว่างทั้งหมด
 def get_valid_locations(board):
     valid_locations = []
     for col in range(COLUMN_COUNT):
@@ -151,53 +160,39 @@ def get_valid_locations(board):
             valid_locations.append(col)
     return valid_locations
 
-def pick_best_move(board, piece):
-    valid_locations = get_valid_locations(board)
-    best_score = -10000
-    best_col = random.choice(valid_locations)
-    for col in valid_locations:
-        row = get_next_open_row(board, col)
-        temp_board = board.copy()
-        drop_piece(temp_board, row, col, piece)
-        score = score_position(temp_board, piece)
-        if score > best_score:
-            best_score = score
-            best_col = col
-    return best_col
 
-@app.route('/')  # เส้นทางเริ่มต้นนี้จะเรนเดอร์เทมเพลต index.html ซึ่งเป็นหน้าเว็บที่ผู้เล่นจะใช้เล่นเกม
+@app.route('/')
 def index():
     return render_template('index.html')
 
 
-@app.route('/make_move', methods=['POST'])  
-# เส้นทางนี้จะถูกเรียกเมื่อผู้เล่นทำการเดินหมาก:
-#   1. การเดินหมากของผู้เล่นจะถูกตรวจสอบว่าถูกต้องและวางลงบนกระดาน
-#   2. ถ้าผู้เล่นชนะ จะส่งผลลัพธ์กลับไปทันที
-#   3. AI จะทำการเดินหมากโดยใช้ อัลกอริทึม Minimax เพื่อหาการเดินที่ดีที่สุด
-#   4. ถ้า AI ชนะ จะส่งผลลัพธ์กลับไป
-#   5. ถ้ายังไม่มีใครชนะ จะส่งกระดานที่อัปเดตและคะแนนของ AI กลับไป
+@app.route('/make_move', methods=['POST'])
 def make_move():
     data = request.json
     col = data['column']
     board = np.array(data['board'])
-    
+
+    print(data)
+
     if is_valid_location(board, col):
         row = get_next_open_row(board, col)
+        # print(row)
         drop_piece(board, row, col, PLAYER_PIECE)
+        # x = get_valid_locations(board)
+        # print(x)
         if winning_move(board, PLAYER_PIECE):
             return jsonify({'board': board.tolist(), 'winner': 'Player', 'score': None})
-        
-        # AI ใช้ Minimax เพื่อเลือกตำแหน่งที่ดีที่สุด และเก็บคะแนน
+
         ai_col, ai_score = minimax(board, 4, -math.inf, math.inf, True)
+        # print(ai_col)
         if is_valid_location(board, ai_col):
             ai_row = get_next_open_row(board, ai_col)
             drop_piece(board, ai_row, ai_col, AI_PIECE)
             if winning_move(board, AI_PIECE):
                 return jsonify({'board': board.tolist(), 'winner': 'AI', 'score': ai_score})
-        
-    return jsonify({'board': board.tolist(), 'winner': '', 'score': ai_score})
+        print(board.tolist())
+    return jsonify({'board': board.tolist(), 'winner': ''})
 
 
-if __name__ == "__main__":  # แอปพลิเคชัน Flask จะถูกรันในโหมด debug และสามารถเข้าถึงได้ที่ http://127.0.0.1:5000/
+if __name__ == "__main__":
     app.run(debug=True)
