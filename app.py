@@ -119,9 +119,10 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
                 return (None, 0)
         else:
             return (None, score_position(board, AI_PIECE))
+
     if maximizingPlayer:
         value = -math.inf
-        column = random.choice(valid_locations)
+        column = None
         for col in valid_locations:
             row = get_next_open_row(board, col)
             b_copy = board.copy()
@@ -133,22 +134,29 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
             alpha = max(alpha, value)
             if alpha >= beta:
                 break
+        if column is None:
+            # หากไม่มีการอัปเดตค่าในลูป ให้เลือกคอลัมน์แรก
+            column = valid_locations[0]
         return column, value
+
     else:
         value = math.inf
-        column = random.choice(valid_locations)
+        # ไม่ใช้การสุ่ม เริ่มต้นด้วย None หรือสามารถใช้ valid_locations[0] หากต้องการ
+        column = None
         for col in valid_locations:
             row = get_next_open_row(board, col)
             b_copy = board.copy()
             drop_piece(b_copy, row, col, PLAYER_PIECE)
             new_score = minimax(b_copy, depth-1, alpha, beta, True)[1]
-            # pruning
             if new_score < value:
                 value = new_score
                 column = col
             beta = min(beta, value)
             if alpha >= beta:
                 break
+        if column is None:
+            # หากไม่มีการอัปเดตค่าในลูป ให้เลือกคอลัมน์แรก
+            column = valid_locations[0]
         return column, value
 
 
@@ -191,7 +199,7 @@ def make_move():
             if winning_move(board, AI_PIECE):
                 return jsonify({'board': board.tolist(), 'winner': 'AI', 'score': ai_score})
         print(board.tolist())
-    return jsonify({'board': board.tolist(), 'winner': ''})
+    return jsonify({'board': board.tolist(), 'winner': '', 'score': ai_score})
 
 
 if __name__ == "__main__":
